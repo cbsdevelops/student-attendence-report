@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Attendence Report</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
+            color: #333;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            font-size: 2em;
+            margin-bottom: 20px;
+        }
+
+        label {
+            font-size: 1.1em;
+            margin-bottom: 10px;
+            display: inline-block;
+        }
+
+        select, button {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 20px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 1.1em;
+        }
+
+        select {
+            background-color: #fafafa;
+        }
+
+        button {
+            background-color: #000000;
+            color: white;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #000000;
+        }
+
+        #details {
+            margin-top: 30px;
+            padding: 20px;
+            background-color: #f9f9f9;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .detail-item {
+            display: flex;
+            margin-bottom: 10px;
+        }
+
+        .detail-item .label {
+            font-weight: bold;
+            width: 120px;
+        }
+
+        .detail-item .value {
+            font-style: italic;
+            color: #555;
+        }
+
+       
+        @media (max-width: 600px) {
+            .container {
+                padding: 15px;
+            }
+
+            select, button {
+                font-size: 1em;
+            }
+
+            .detail-item .label {
+                width: 100px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>View Student Attendence Report</h1>
+        <label for="nameDropdown">Select a Student:</label>
+        <select id="nameDropdown">
+            <option value="">Select a Name </option>
+        </select>
+        <button id="fetchDetails">Show Attendence Report</button>
+
+        <div id="details" style="display:none;">
+            <h2>Attendence Report</h2>
+            <div id="detailsContainer"></div>
+        </div>
+    </div>
+
+    <script>
+        const SHEET_ID = "1pKB_jbGTKhkZgVYvrWlrL0gjK27NkIDqLCZ_V70QrwI";
+        const SHEET_NAME = "Sheet1"; 
+        const URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${SHEET_NAME}`;
+
+        let rowsData = [];
+        let headers = []; 
+
+        async function fetchGoogleSheetData() {
+            try {
+                const response = await fetch(URL);
+                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+
+                const text = await response.text();
+                const json = JSON.parse(text.substring(47).slice(0, -2)); 
+                rowsData = json.table.rows;
+                headers = json.table.cols.map(col => col.label); 
+
+                populateDropdown();
+            } catch (error) {
+                console.error("Error fetching Google Sheet data:", error);
+            }
+        }
+
+        function populateDropdown() {
+            const dropdown = document.getElementById("nameDropdown");
+            rowsData.forEach(row => {
+                const name = row.c[1]?.v; 
+                if (name) {
+                    const option = document.createElement("option");
+                    option.value = name;
+                    option.textContent = name;
+                    dropdown.appendChild(option);
+                }
+            });
+        }
+
+        function showDetails() {
+            const selectedName = document.getElementById("nameDropdown").value;
+            if (!selectedName) {
+                alert("Please select a name.");
+                return;
+            }
+
+            const row = rowsData.find(row => row.c[1]?.v === selectedName); 
+            if (!row) {
+                alert("No data found for the selected name.");
+                return;
+            }
+
+            const detailsContainer = document.getElementById("detailsContainer");
+            const detailsSection = document.getElementById("details");
+
+            
+            detailsSection.style.display = "block";
+            detailsContainer.innerHTML = ""; 
+
+            
+            headers.forEach((header, index) => {
+                const detailItem = document.createElement("div");
+                detailItem.className = "detail-item";
+
+                const label = document.createElement("div");
+                label.className = "label";
+                label.textContent = header;
+
+                const value = document.createElement("div");
+                value.className = "value";
+                value.textContent = row.c[index]?.v || "N/A"; 
+
+                detailItem.appendChild(label);
+                detailItem.appendChild(value);
+                detailsContainer.appendChild(detailItem);
+            });
+        }
+
+        document.getElementById("fetchDetails").addEventListener("click", showDetails);
+
+        fetchGoogleSheetData();
+    </script>
+
+</body>
+</html>
